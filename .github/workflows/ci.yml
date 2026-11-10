@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Syntax, catalog, docs, smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell syntax
+        run: bash -n rootback.sh lib/*.sh tests/*.sh tests/kernel/*.sh
+
+      - name: Smoke tests
+        run: bash tests/smoke.sh
+
+      - name: Catalog / case fixtures consistency
+        shell: bash
+        run: |
+          set -euo pipefail
+          catalog=$(awk -F'|' '!/^#/ && NF {print $1}' catalog/cves.tsv | sort)
+          cases=$(awk -F'|' '!/^#/ && NF {print $1}' tests/cases.tsv | sort)
+          test "$(printf '%s\n' "$catalog" | wc -l)" -eq 27
+          test "$(printf '%s\n' "$cases" | wc -l)" -eq 27
+          diff -u <(printf '%s\n' "$catalog") <(printf '%s\n' "$cases")
+
+      - name: Site table matches catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          n=$(awk -F'|' '!/^#/ && NF {print $1}' catalog/cves.tsv | wc -l)
+          test "$(grep -c '<tr><td><code>CVE-' index.html)" -eq "$n"
+          ! grep -qi '<script' index.html
+
+      - name: Markdown tables present
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(grep -c '^| CVE-' README.md)" -ge 27

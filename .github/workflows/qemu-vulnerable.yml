@@ -1,0 +1,61 @@
+name: Vulnerable kernel (QEMU TCG)
+
+# Hosted runners cannot replace their own kernel. This workflow instead builds
+# a known-vulnerable kernel and boots it in a QEMU TCG guest, proving the runner
+# can execute code on a vulnerable kernel without KVM or host changes.
+# It does NOT claim to run every exploit; use `vulnerable-kernel.yml` on a
+# disposable self-hosted VM for real root/password-reset E2E.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Linux version to build and boot (must be vulnerable to the CVE under test)"
+        required: true
+        default: "6.12.80"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  boot:
+    name: Build and boot linux-${{ inputs.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kernel/QEMU dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential bc bison flex libssl-dev libelf-dev zstd \
+            qemu-system-x86 cpio busybox-static
+
+      - name: Build vulnerable kernel
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          kernel=$(bash tests/kernel/build_vuln_kernel.sh "$VERSION" "$RUNNER_TEMP/kernel" | tail -1)
+          test -r "$kernel"
+          echo "KERNEL=$kernel" >> "$GITHUB_ENV"
+          ls -lh "$kernel"
+
+      - name: Boot under QEMU TCG and verify uname
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          bash tests/qemu_probe.sh \
+            --kernel "$KERNEL" \
+            --expect "$VERSION" \
+            --timeout 180
+
+      - name: Upload bzImage for reuse
+        uses: actions/upload-artifact@v4
+        with:
+          name: bzImage-${{ inputs.version }}
+          path: ${{ env.KERNEL }}
+          retention-days: 7

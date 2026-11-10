@@ -1,0 +1,31 @@
+# Per-CVE detection fixtures for CI. No exploit is executed here.
+# Format: id|tool|vuln_kernel|patched_kernel|vuln_tool|patched_tool|arch|modules|userns|ptrace|kvm|nested|cifs
+# tool=none means the CVE is selected by kernel version/features. For tool rows,
+# the harness installs a fake binary with vuln_tool/patched_tool as its version.
+CVE-2026-31431|none|6.12.80|7.3.3|||x86_64|algif_aead|no|3|no|no|no
+CVE-2026-43284|none|6.12.80|7.3.3|||x86_64|esp4,esp6|yes|3|no|no|no
+CVE-2026-43500|none|6.12.80|7.3.3|||x86_64|rxrpc|yes|3|no|no|no
+CVE-2026-46300|none|6.12.80|7.3.3|||x86_64|esp4,esp6|yes|3|no|no|no
+CVE-2026-46331|none|6.12.80|7.3.3|||x86_64|act_pedit|yes|3|no|no|no
+CVE-2026-43494|none|6.12.80|7.3.3|||x86_64|rds|no|3|no|no|no
+CVE-2026-46333|none|6.12.80|7.3.3|||x86_64||no|1|no|no|no
+CVE-2026-46243|none|6.12.80|7.3.3|||x86_64|cifs|yes|3|no|no|yes
+CVE-2026-53359|none|6.12.80|7.3.3|||x86_64||no|3|yes|yes|no
+CVE-2026-64561|none|6.12.80|7.3.3|||x86_64||no|3|yes|yes|no
+CVE-2026-89775|none|7.2.3|7.3.3|||aarch64||no|3|yes|yes|no
+CVE-2025-40026|none|6.12.51|7.3.3|||x86_64||no|3|yes|yes|no
+CVE-2026-46316|none|6.12.92|7.3.3|||aarch64||no|3|yes|yes|no
+CVE-2025-32463|sudo|7.3.3|7.3.3|1.9.16p2|1.9.17p1|x86_64||no|3|no|no|no
+CVE-2021-4034|pkexec|7.3.3|7.3.3|0.120|127|x86_64||no|3|no|no|no
+CVE-2025-31133|runc|7.3.3|7.3.3|1.2.7|1.3.3|x86_64||no|3|no|no|no
+CVE-2025-52565|runc|7.3.3|7.3.3|1.2.7|1.3.3|x86_64||no|3|no|no|no
+CVE-2025-52881|runc|7.3.3|7.3.3|1.2.7|1.3.3|x86_64||no|3|no|no|no
+CVE-2026-41579|runc|7.3.3|7.3.3|1.3.5|1.3.6|x86_64||no|3|no|no|no
+CVE-2024-21626|runc|7.3.3|7.3.3|1.1.11|1.2.8|x86_64||no|3|no|no|no
+CVE-2026-57231|podman|7.3.3|7.3.3|5.8.3|5.8.4|x86_64||no|3|no|no|no
+CVE-2026-17106|docker|7.3.3|7.3.3|29.6.1|29.7.0|x86_64||no|3|no|no|no
+CVE-2024-1086|none|6.6.0|7.3.3|||x86_64|nf_tables|yes|3|no|no|no
+CVE-2022-0847|none|5.16.10|7.3.3|||x86_64||no|3|no|no|no
+CVE-2023-4911|glibc|7.3.3|7.3.3|2.35|2.39|x86_64||no|3|no|no|no
+CVE-2023-0386|none|6.2.1|7.3.3|||x86_64|overlay|yes|3|no|no|no
+CVE-2023-32233|none|6.3.1|7.3.3|||x86_64|nf_tables|yes|3|no|no|no
