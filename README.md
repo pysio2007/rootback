@@ -229,15 +229,13 @@ Dry-run first, and keep a recovery path (console, rescue media) before changing 
 
 ## CI
 
-Five workflows, with deliberately different claims:
+Three hosted workflows, all runnable on `ubuntu-latest`:
 
 | Workflow | Proves | Runs the exploit? |
 |---|---|---|
 | `ci.yml` | shell syntax, catalog/site consistency, smoke tests | no |
 | `cve-matrix.yml` | one detection job per CVE (vulnerable + patched fixtures), one build-only job per `auto` recipe | no |
-| `qemu-vulnerable.yml` | builds a known-vulnerable kernel and boots it under QEMU TCG on a hosted runner | no |
-| `vulnerable-kernel.yml` | real detection/exploit on a self-hosted runner that already boots a vulnerable kernel | yes, manual and gated |
-| `e2e-self-hosted.yml` | real exploit + root reset on a disposable self-hosted VM | yes, manual and gated |
+| `qemu-vulnerable.yml` | builds a known-vulnerable kernel and boots it under QEMU TCG | no |
 
 The 27 detection jobs read `tests/cases.tsv` and drive `rootback.sh` through fixture overrides (`ROOTBACK_KERNEL`, `ROOTBACK_CONFIG`, `ROOTBACK_MODULES`, `ROOTBACK_USERNS`, `ROOTBACK_KVM`, `ROOTBACK_NESTED`, tool-version binaries in `PATH`). Each job asserts both a vulnerable fixture and a patched fixture, so a detector cannot pass by always saying "vulnerable".
 
@@ -245,13 +243,11 @@ The 7 build jobs run `tests/cve_matrix.sh --cve CVE-... --build-only`. They fetc
 
 ### Can a hosted runner use a vulnerable kernel?
 
-Not by swapping its own kernel. A GitHub-hosted runner cannot reboot into a custom kernel, and a container always shares the host kernel. The supported path is a QEMU TCG guest:
+Not by swapping its own kernel. A GitHub-hosted runner cannot reboot into a custom kernel, and a container always shares the host kernel. The supported hosted path is a QEMU TCG guest:
 
 - `qemu-vulnerable.yml` builds Linux 6.12.80 from `tests/kernel/build_vuln_kernel.sh` with the features the recipes need (`algif_aead`, ESP/ESPINTCP, `act_pedit`, RDS, io_uring, nf_tables, overlayfs, user/net namespaces), then boots it with `tests/qemu_probe.sh` and verifies `uname -r` inside the guest.
 - QEMU TCG needs no `/dev/kvm` and does not touch the runner kernel. This is a **vulnerable-kernel boot probe**, not a claim that every exploit succeeds inside it.
-- For real root/password-reset E2E, use `vulnerable-kernel.yml` on a disposable self-hosted runner that already boots the target kernel, or `e2e-self-hosted.yml` with the full `rootback.sh` flow.
-
-`vulnerable-kernel.yml` requires `/etc/rootback-vulnerable-kernel`, an exact `uname -r` match, the `vulnerable-kernel` environment approval, and passwordless sudo for the post-check. `e2e-self-hosted.yml` additionally requires `/etc/rootback-e2e-disposable` and the typed input `DISPOSABLE`. Do not point either at a machine you care about.
+- Exploit execution is intentionally not part of CI. Run `./rootback.sh exploit` manually on a machine you own or are authorized to test.
 
 ## Repository layout
 
@@ -270,7 +266,7 @@ tests/cases.tsv          per-CVE vulnerable/patched fixtures
 tests/cve_matrix.sh      fixture runner + optional build-only
 tests/qemu_probe.sh      QEMU TCG vulnerable-kernel boot probe
 tests/kernel/            deterministic vulnerable-kernel build
-.github/workflows/       ci, cve-matrix, qemu-vulnerable, vulnerable-kernel, e2e
+.github/workflows/       ci, cve-matrix, qemu-vulnerable
 ```
 
 ## Updating the catalog

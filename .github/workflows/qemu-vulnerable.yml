@@ -3,8 +3,8 @@ name: Vulnerable kernel (QEMU TCG)
 # Hosted runners cannot replace their own kernel. This workflow instead builds
 # a known-vulnerable kernel and boots it in a QEMU TCG guest, proving the runner
 # can execute code on a vulnerable kernel without KVM or host changes.
-# It does NOT claim to run every exploit; use `vulnerable-kernel.yml` on a
-# disposable self-hosted VM for real root/password-reset E2E.
+# It does NOT claim to run every exploit; it proves a vulnerable kernel can be
+# built and booted without changing or rebooting the runner.
 
 on:
   workflow_dispatch:
