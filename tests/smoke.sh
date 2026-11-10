@@ -13,7 +13,7 @@ check(){ if eval "$1"; then ok "$2"; else bad "$2"; fi; }
 
 cd "$ROOT"
 
-check 'bash -n rootback.sh lib/*.sh tests/*.sh tests/kernel/*.sh' 'shell syntax'
+check 'bash -n rootback.sh lib/*.sh tests/*.sh tests/kernel/*.sh tests/poc_compat/*.sh' 'shell syntax'
 check 'awk -F"|" '"'"'/^[^#]/ && NF!=18 {exit 1}'"'"' catalog/cves.tsv' 'catalog has 18 fields per row'
 check '[ "$(grep -vc "^#" catalog/cves.tsv)" -eq 27 ]' 'catalog has 27 entries'
 check '[ "$(grep -vc "^#" tests/cases.tsv)" -eq 27 ]' 'case matrix covers 27 CVEs'
