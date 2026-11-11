@@ -28,8 +28,9 @@ jobs:
           set -euo pipefail
           catalog=$(awk -F'|' '!/^#/ && NF {print $1}' catalog/cves.tsv | sort)
           cases=$(awk -F'|' '!/^#/ && NF {print $1}' tests/cases.tsv | sort)
-          test "$(printf '%s\n' "$catalog" | wc -l)" -eq 27
-          test "$(printf '%s\n' "$cases" | wc -l)" -eq 27
+          n=$(printf '%s\n' "$catalog" | wc -l)
+          test "$n" -eq 39
+          test "$(printf '%s\n' "$cases" | wc -l)" -eq "$n"
           diff -u <(printf '%s\n' "$catalog") <(printf '%s\n' "$cases")
 
       - name: Site table matches catalog

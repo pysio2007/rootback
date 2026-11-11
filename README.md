@@ -28,7 +28,7 @@ It does not phone home, persist, harvest credentials, or accept a remote target.
 
 ## What it detects
 
-Catalog snapshot: **2026-11-10**. 27 entries: 8 kernel LPEs, 5 KVM escapes, 7 container-runtime escapes, 1 userspace entry, and 6 legacy entries (2 of which have auto recipes).
+Catalog snapshot: **2026-11-11**. 39 entries: 8 kernel LPEs, 6 KVM escapes, 11 Android kernel entries, 7 container-runtime escapes, 1 userspace entry, and 6 legacy entries (2 of which have auto recipes).
 
 The tables below are generated from [`catalog/cves.tsv`](catalog/cves.tsv), the single source of truth.
 
@@ -56,6 +56,27 @@ The tables below are generated from [`catalog/cves.tsv`](catalog/cves.tsv), the 
 | CVE-2026-89775 | KVM arm64 VNCR | kvm | Linux 6.16 - 6.18.50, 7.2.0 - 7.2.4 (KVM/arm64) | 6.18.51, 7.2.5, 7.3+ | manual |
 | CVE-2025-40026 | KVM x86 I/O intercept | kvm | Linux 3.0 - 6.17.1 (KVM/x86) | 6.17.2, 6.18+ | manual |
 | CVE-2026-46316 | ITScape | kvm | Linux 6.10 - 6.12.92, 6.18.0 - 6.18.34, 7.0.0 - 7.0.11 (KVM/arm64) | 6.12.93, 6.18.35, 7.0.12, 7.1+ | manual |
+| CVE-2026-99999 | IPv4 checksum_start | kvm | Linux 2.6.27 - 5.10.271, 5.15.222, 6.1.189, 6.6.158, 6.12.112, 6.18.56, 7.2.10 | 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.57, 7.2.11, 7.3+ | manual |
+
+### Android kernel
+
+Android is matched against the device security patch level (`ro.build.version.security_patch`), not the GKI base version: GKI branches cherry-pick fixes, so `6.1.75-android14-*` says nothing about whether a given CVE is fixed. An entry is `PATCHED` when the device SPL is at or above the fixed level. These entries are detection-only; the desktop recipes target a SUID `su`, glibc, and `/etc/shadow`, none of which exist on Android.
+
+| CVE | Name | Class | Affected | Fixed | Mode |
+|---|---|---|---|---|---|
+| CVE-2026-53256 | Android Bluetooth EoP | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-59044 | pKVM host EoP | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-59045 | pKVM host EoP (2) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-80604 | Android HID EoP | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-89774 | Android Bluetooth EoP (2) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2025-38627 | F2FS EoP | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-58825 | DMA-BUF EoP | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-58826 | DMA-BUF EoP (2) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-58827 | DMA-BUF EoP (3) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-58828 | DMA-BUF EoP (4) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-59043 | pKVM host EoP (3) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+
+Entries that only have an upstream fix matrix are still reported on Android, but capped at `medium` confidence and annotated: the GKI patch set is not the stable patch number. Entries that require unprivileged user namespaces are marked unreachable, because the Android app sandbox does not grant them.
 
 ### Container runtime
 
@@ -93,10 +114,10 @@ Kept for long-lived LTS/embedded machines. Most are detection-only here because 
 ## How it works
 
 ```text
-uname / config / modules / sysctls
+uname / config / modules / sysctls / ro.build.version.security_patch
               │
               ▼
-   catalog match (stable fix matrix + feature gates)
+   catalog match (stable fix matrix or Android SPL + feature gates)
               │
               ▼
    explicit authorization gate (--authorized + typed phrase)
@@ -109,6 +130,8 @@ uname / config / modules / sysctls
 ```
 
 Detection is a triage, not an attestation. The version matrices are upstream stable fix thresholds taken from the CVE records; distribution kernels backport fixes without changing their base version. A `VULNERABLE` result on a vendor kernel is therefore a hypothesis. `--include-medium` is required for non-interactive auto-runs of such candidates.
+
+On Android there is a real local oracle: the security patch level. When it is readable, entries with an Android fixed level are decided by SPL, not by `uname -r`. When it is missing, the result drops to `UNKNOWN` or `medium` instead of pretending the GKI base version is authoritative. Override it for a scan with `--android-spl 2026-10-01`.
 
 Feature gates matter: `algif_aead`, `esp4`/`esp6`, `act_pedit`, `rds`, `cifs.upcall`, unprivileged user namespaces, `ptrace_scope`, `/dev/kvm`, and nested virtualization. If the feature is absent, the exploit path is not reachable even when the kernel version is in range.
 
@@ -184,11 +207,14 @@ Notes:
 
 Manual entries are detection plus research links. They are not auto-run because they need host-side control of a VM/container, kernel-specific offsets, a second terminal, or because the public PoC is a panic/DoS rather than a password-recovery path.
 
+Android has no automatic path at all: `exploit auto` selects nothing, and an explicit recipe is refused before fetching. The public recipes assume a SUID `su`, glibc, and `chpasswd`; on Android the equivalent target and the credential store do not exist.
+
 ## KVM and container escapes
 
 These are detection-only by design:
 
 - A KVM guest-to-host escape requires a malicious guest. The public Januscape PoC panics the host; the full escape is withheld. Zapscape and the arm64 VNCR bug need nested virtualization. ITScape has a public full-chain PoC for arm64, but it needs an arm64 KVM host, nested virtualization, and guest root.
+- CVE-2026-99999 is the virtio-net checksum metadata bug: a guest frame reaches `skb_checksum_help()` with a forged `checksum_start`, corrupting the IPv4 header on the host. It is listed as KEV; the public write-up covers host memory disclosure, crash, and administrator code execution. It also has a local netfilter trigger, so the detector does not require `/dev/kvm`.
 - runc/Podman escapes require control over container creation, a malicious image, or shared mounts. If you are already inside a container without those, a version match is not enough.
 - Copy Fail is the exception: the same page-cache primitive can cross a shared base image in some Kubernetes setups. A public Kubernetes PoC is linked from the Copy Fail entry.
 
@@ -208,6 +234,7 @@ These are detection-only by design:
 - Auto exploitation needs `git`, `gcc`, `make`, `python3` as appropriate, plus `chpasswd` and `base64`.
 - A normal user account that can run the PoC. Running the tool as root is unnecessary for exploitation and makes it pointless.
 - For container entries: `runc` or `podman` installed on the host being inspected.
+- Android detection needs only `getprop` (toybox) and `uname`. Password reset is not supported on Android: there is no `/etc/shadow` or `chpasswd`, and the lockscreen credential lives elsewhere. `reset` refuses before touching anything.
 
 `./rootback.sh deps` prints what is present.
 
@@ -227,6 +254,8 @@ The recipes come from upstream, and upstream lists the targets it tested. This r
 
 Dry-run first, and keep a recovery path (console, rescue media) before changing a password.
 
+The Android entries are detection-only and are validated against the Android Security Bulletin's fixed patch level (2026-11-05). No Android device or emulator is part of this repository's test matrix: the fixtures drive `ROOTBACK_OS_ID=android` and `ROOTBACK_ANDROID_SPL`, which exercises the SPL comparison but not a real `getprop`.
+
 ## CI
 
 Three hosted workflows, all runnable on `ubuntu-latest`:
@@ -237,7 +266,7 @@ Three hosted workflows, all runnable on `ubuntu-latest`:
 | `cve-matrix.yml` | one detection job per CVE (vulnerable + patched fixtures), one build-only job per `auto` recipe | no |
 | `qemu-vulnerable.yml` | builds a known-vulnerable kernel and boots it under QEMU TCG | no |
 
-The 27 detection jobs read `tests/cases.tsv` and drive `rootback.sh` through fixture overrides (`ROOTBACK_KERNEL`, `ROOTBACK_CONFIG`, `ROOTBACK_MODULES`, `ROOTBACK_USERNS`, `ROOTBACK_KVM`, `ROOTBACK_NESTED`, tool-version binaries in `PATH`). Each job asserts both a vulnerable fixture and a patched fixture, so a detector cannot pass by always saying "vulnerable".
+The 39 detection jobs read `tests/cases.tsv` and drive `rootback.sh` through fixture overrides (`ROOTBACK_KERNEL`, `ROOTBACK_OS_ID`, `ROOTBACK_ANDROID_SPL`, `ROOTBACK_CONFIG`, `ROOTBACK_MODULES`, `ROOTBACK_USERNS`, `ROOTBACK_KVM`, `ROOTBACK_NESTED`, tool-version binaries in `PATH`). Each job asserts both a vulnerable fixture and a patched fixture, so a detector cannot pass by always saying "vulnerable".
 
 The 7 build jobs run `tests/cve_matrix.sh --cve CVE-... --build-only`. They fetch and compile the upstream PoC but never execute it.
 
@@ -258,7 +287,7 @@ lib/catalog.sh           TSV loader + Markdown/HTML renderers
 lib/detect.sh            per-class detection
 lib/exploit.sh           fetch / build / run / verify
 lib/reset.sh             payload construction + chpasswd
-catalog/cves.tsv         single source of truth (27 rows)
+catalog/cves.tsv         single source of truth (39 rows)
 index.html               pure-HTML text site for rootback.dev
 CNAME                    rootback.dev
 tests/smoke.sh           detection, version, and payload tests
@@ -271,7 +300,7 @@ tests/kernel/            deterministic vulnerable-kernel build
 
 ## Updating the catalog
 
-Add a row to `catalog/cves.tsv`; keep 18 `|`-separated fields. `kfix` is a space-separated stable matrix; `X.Y.Z+` is a floor. Then render the tables:
+Add a row to `catalog/cves.tsv`; keep 19 `|`-separated fields. `kfix` is a space-separated stable matrix; `X.Y.Z+` is a floor. `aspl` is the Android security patch level (`YYYY-MM-DD`) that fixes the entry; when it is set and the host is Android, detection compares `ro.build.version.security_patch` instead of `kfix`. Then render the tables:
 
 ```bash
 ./rootback.sh list --markdown --class kernel

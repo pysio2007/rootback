@@ -99,8 +99,8 @@
 </section>
 
 <section>
-<h2>Catalog — snapshot 2026-11-10</h2>
-<p class="note">27 entries. <code>auto</code> means a public recipe exists and the tool can run it after consent. <code>manual</code> means detection plus a research link: these need host-side control of a VM/container, kernel-specific offsets, a second terminal, or the public PoC is a panic/DoS rather than a recovery path.</p>
+<h2>Catalog — snapshot 2026-11-11</h2>
+<p class="note">39 entries. <code>auto</code> means a public recipe exists and the tool can run it after consent. <code>manual</code> means detection plus a research link: these need host-side control of a VM/container, kernel-specific offsets, a second terminal, or the public PoC is a panic/DoS rather than a recovery path. Android entries are decided by <code>ro.build.version.security_patch</code>.</p>
 
 <h3>Kernel local privilege escalation</h3>
 <div class="scroll"><table>
@@ -125,6 +125,25 @@
 <tr><td><code>CVE-2026-89775</code></td><td>KVM arm64 VNCR</td><td>kvm</td><td>Linux 6.16 - 6.18.50, 7.2.0 - 7.2.4 (KVM/arm64)</td><td>6.18.51, 7.2.5, 7.3+</td><td>manual</td><td><a href="https://seclists.org/oss-sec/2026/q3/811">research</a></td></tr>
 <tr><td><code>CVE-2025-40026</code></td><td>KVM x86 I/O intercept</td><td>kvm</td><td>Linux 3.0 - 6.17.1 (KVM/x86)</td><td>6.17.2, 6.18+</td><td>manual</td><td><a href="https://access.redhat.com/security/cve/cve-2025-40026">research</a></td></tr>
 <tr><td><code>CVE-2026-46316</code></td><td>ITScape</td><td>kvm</td><td>Linux 6.10 - 6.12.92, 6.18.0 - 6.18.34, 7.0.0 - 7.0.11 (KVM/arm64)</td><td>6.12.93, 6.18.35, 7.0.12, 7.1+</td><td>manual</td><td><a href="https://github.com/V4bel/ITScape">research</a></td></tr>
+<tr><td><code>CVE-2026-99999</code></td><td>IPv4 checksum_start</td><td>kvm</td><td>Linux 2.6.27 - 5.10.271, 5.15.222, 6.1.189, 6.6.158, 6.12.112, 6.18.56, 7.2.10</td><td>5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.57, 7.2.11, 7.3+</td><td>manual</td><td><a href="https://pwn.ai/blog/pwnescape">research</a></td></tr>
+</tbody></table></div>
+
+<h3>Android kernel</h3>
+<p class="note">Matched against the device security patch level, not the GKI base version. Detection-only: no Android recipe, and no password reset.</p>
+<div class="scroll"><table>
+<thead><tr><th>CVE</th><th>Name</th><th>Class</th><th>Affected</th><th>Fixed</th><th>Mode</th><th>Research</th></tr></thead>
+<tbody>
+<tr><td><code>CVE-2026-53256</code></td><td>Android Bluetooth EoP</td><td>android</td><td>Android devices, SPL &lt; 2026-11-05</td><td>2026-11-05 SPL</td><td>manual</td><td><a href="https://android.googlesource.com/kernel/common/+/529c9d587ac146586f9817ee994bd8cfa609769b">research</a></td></tr>
+<tr><td><code>CVE-2026-59044</code></td><td>pKVM host EoP</td><td>android</td><td>Android devices, SPL &lt; 2026-11-05</td><td>2026-11-05 SPL</td><td>manual</td><td><a href="https://android.googlesource.com/kernel/common/+/a4e59da7cad6b445229ae67c0ebed83a7b18dcb5">research</a></td></tr>
+<tr><td><code>CVE-2026-59045</code></td><td>pKVM host EoP (2)</td><td>android</td><td>Android devices, SPL &lt; 2026-11-05</td><td>2026-11-05 SPL</td><td>manual</td><td><a href="https://android.googlesource.com/kernel/common/+/c47ebb7427d5011de67b526eac67b42da640bdc5">research</a></td></tr>
+<tr><td><code>CVE-2026-80604</code></td><td>Android HID EoP</td><td>android</td><td>Android devices, SPL &lt; 2026-11-05</td><td>2026-11-05 SPL</td><td>manual</td><td><a href="https://android.googlesource.com/kernel/common/+/15475ee563738135a9978f2a0481b1cf972b3b72">research</a></td></tr>
+<tr><td><code>CVE-2026-89774</code></td><td>Android Bluetooth EoP (2)</td><td>android</td><td>Android devices, SPL &lt; 2026-11-05</td><td>2026-11-05 SPL</td><td>manual</td><td><a href="https://android.googlesource.com/kernel/common/+/315636ba7cbf03382cfa7bd8887118f59fe96c5f">research</a></td></tr>
+<tr><td><code>CVE-2025-38627</code></td><td>F2FS EoP</td><td>android</td><td>Android devices, SPL &lt; 2026-11-05</td><td>2026-11-05 SPL</td><td>manual</td><td><a href="https://android.googlesource.com/kernel/common/+/5d604d40cd3232b09cb339941ef958e49283ed0a">research</a></td></tr>
+<tr><td><code>CVE-2026-58825</code></td><td>DMA-BUF EoP</td><td>android</td><td>Android devices, SPL &lt; 2026-11-05</td><td>2026-11-05 SPL</td><td>manual</td><td><a href="https://android.googlesource.com/kernel/common/+/efe16a3021b9f95eb1cb83e98d0d1db9bff94ce4">research</a></td></tr>
+<tr><td><code>CVE-2026-58826</code></td><td>DMA-BUF EoP (2)</td><td>android</td><td>Android devices, SPL &lt; 2026-11-05</td><td>2026-11-05 SPL</td><td>manual</td><td><a href="https://android.googlesource.com/kernel/common/+/13beada2dac38c2d7303f1700aa16fb5053b919d">research</a></td></tr>
+<tr><td><code>CVE-2026-58827</code></td><td>DMA-BUF EoP (3)</td><td>android</td><td>Android devices, SPL &lt; 2026-11-05</td><td>2026-11-05 SPL</td><td>manual</td><td><a href="https://android.googlesource.com/kernel/common/+/769fa413e80cca30ff767f6f3e18f920d0353f67">research</a></td></tr>
+<tr><td><code>CVE-2026-58828</code></td><td>DMA-BUF EoP (4)</td><td>android</td><td>Android devices, SPL &lt; 2026-11-05</td><td>2026-11-05 SPL</td><td>manual</td><td><a href="https://android.googlesource.com/kernel/common/+/b597ddd55fd100d3eca5b9c2024a5a09dcc950ec">research</a></td></tr>
+<tr><td><code>CVE-2026-59043</code></td><td>pKVM host EoP (3)</td><td>android</td><td>Android devices, SPL &lt; 2026-11-05</td><td>2026-11-05 SPL</td><td>manual</td><td><a href="https://android.googlesource.com/kernel/common/+/82cd807f41d89d5cf2b4c3ac7affdb91188baea7">research</a></td></tr>
 </tbody></table></div>
 
 <h3>Container runtime</h3>
@@ -164,10 +183,10 @@
 
 <section>
 <h2>How it works</h2>
-<pre>uname / config / modules / sysctls
+<pre>uname / config / modules / sysctls / ro.build.version.security_patch
               |
               v
-   catalog match (stable fix matrix + feature gates)
+   catalog match (stable fix matrix or Android SPL + feature gates)
               |
               v
    authorization gate (--authorized + typed phrase)
@@ -177,7 +196,7 @@
               |
               v
    root-owned marker (uid 0, nonce) -> reset verified</pre>
-<p>Detection checks the upstream stable fix matrix and then the feature gates that make the path reachable: <code>algif_aead</code>, <code>esp4</code>/<code>esp6</code>, <code>act_pedit</code>, <code>rds</code>, <code>cifs.upcall</code>, unprivileged user namespaces, <code>ptrace_scope</code>, <code>/dev/kvm</code>, and nested virtualization. A distribution kernel can backport a fix without changing its base version, so a <code>VULNERABLE</code> result on a vendor kernel is a hypothesis; non-interactive auto-runs of medium-confidence candidates require <code>--include-medium</code>.</p>
+<p>Detection checks the upstream stable fix matrix and then the feature gates that make the path reachable: <code>algif_aead</code>, <code>esp4</code>/<code>esp6</code>, <code>act_pedit</code>, <code>rds</code>, <code>cifs.upcall</code>, unprivileged user namespaces, <code>ptrace_scope</code>, <code>/dev/kvm</code>, and nested virtualization. A distribution kernel can backport a fix without changing its base version, so a <code>VULNERABLE</code> result on a vendor kernel is a hypothesis; non-interactive auto-runs of medium-confidence candidates require <code>--include-medium</code>. On Android, entries with a fixed patch level are decided by <code>ro.build.version.security_patch</code>; entries that only have an upstream matrix are capped at <code>medium</code> and annotated with the GKI caveat.</p>
 </section>
 
 <section>

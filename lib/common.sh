@@ -136,8 +136,35 @@ rb_kernel_status() {
 # ---------------------------------------------------------------------------
 # Local system introspection.
 # ---------------------------------------------------------------------------
+# Android is not a desktop distro: it has no /etc/os-release and no shadow
+# database. Detect it from getprop/build.prop or a GKI uname suffix.
+rb_is_android() {
+  if [[ ${ROOTBACK_OS_ID:-} == android ]]; then return 0; fi
+  if [[ ${ROOTBACK_ANDROID:-0} == 1 ]]; then return 0; fi
+  if command -v getprop >/dev/null 2>&1 &&
+     [[ -n $(getprop ro.build.version.sdk 2>/dev/null || true) ]]; then
+    return 0
+  fi
+  [[ -r /system/build.prop ]] && return 0
+  case $(uname -r 2>/dev/null || true) in
+    *-android*) return 0 ;;
+  esac
+  return 1
+}
+
+# Android security patch level (ro.build.version.security_patch, YYYY-MM-DD).
+rb_android_spl() {
+  if [[ -n ${ROOTBACK_ANDROID_SPL:-} ]]; then printf '%s' "$ROOTBACK_ANDROID_SPL"; return 0; fi
+  if command -v getprop >/dev/null 2>&1; then
+    getprop ro.build.version.security_patch 2>/dev/null || true
+  fi
+}
+
+rb_spl_valid() { [[ ${1:-} =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; }
+
 rb_os_id() {
   if [[ -n ${ROOTBACK_OS_ID:-} ]]; then printf '%s' "$ROOTBACK_OS_ID"; return 0; fi
+  if rb_is_android; then printf 'android'; return 0; fi
   local id=''
   if [[ -r /etc/os-release ]]; then
     id=$(sed -n 's/^ID=//p' /etc/os-release | head -1 | tr -d '"')

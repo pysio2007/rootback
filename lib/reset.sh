@@ -52,6 +52,7 @@ rb_b64() {
 }
 
 rb_prepare_payload() {
+  rb_is_android && rb_die "Android: no /etc/shadow or chpasswd; rootback cannot reset a lockscreen credential"
   rb_validate_user "$RB_USER"
   rb_resolve_password
   local chpasswd base64 passwd

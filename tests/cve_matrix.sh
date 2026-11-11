@@ -45,7 +45,7 @@ run_one() {
   local id=$1 tool=$2 vkernel=$3 pkernel=$4 vtool=$5 ptool=$6
   local arch=$7 modules=$8 userns=$9 ptrace=${10} kvm=${11} nested=${12} cifs=${13} scenario=${14}
 
-  local dir kernel active='' sudo_ver pkexec_ver runc_ver podman_ver docker_ver glibc_ver
+  local dir kernel active='' sudo_ver pkexec_ver runc_ver podman_ver docker_ver glibc_ver os_id spl
   dir=$(mktemp -d "${TMPDIR:-/tmp}/rootback-ci.XXXXXX") || { fail "$id: mktemp"; return; }
   mkdir -p "$dir/bin" "$dir/tmp" "$dir/state"
 
@@ -66,6 +66,13 @@ run_one() {
     docker) docker_ver=$active ;;
     glibc)  glibc_ver=$active ;;
   esac
+
+  os_id=ubuntu
+  spl=''
+  if [[ $tool == android ]]; then
+    os_id=android
+    spl=$active
+  fi
 
   write_bin "$dir/bin/sudo"   "Sudo version $sudo_ver" 4755
   write_bin "$dir/bin/pkexec" "pkexec version $pkexec_ver" 4755
@@ -92,7 +99,8 @@ EOF
   if ! env \
       ROOTBACK_KERNEL="$kernel" \
       ROOTBACK_ARCH="$arch" \
-      ROOTBACK_OS_ID=ubuntu \
+      ROOTBACK_OS_ID="$os_id" \
+      ROOTBACK_ANDROID_SPL="$spl" \
       ROOTBACK_CONFIG="$dir/config" \
       ROOTBACK_MODULES="$modules" \
       ROOTBACK_USERNS="$userns" \
@@ -139,7 +147,8 @@ EOF
       if env \
           ROOTBACK_KERNEL="$kernel" \
           ROOTBACK_ARCH="$arch" \
-          ROOTBACK_OS_ID=ubuntu \
+          ROOTBACK_OS_ID="$os_id" \
+          ROOTBACK_ANDROID_SPL="$spl" \
           ROOTBACK_CONFIG="$dir/config" \
           ROOTBACK_MODULES="$modules" \
           ROOTBACK_USERNS="$userns" \

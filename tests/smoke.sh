@@ -14,9 +14,9 @@ check(){ if eval "$1"; then ok "$2"; else bad "$2"; fi; }
 cd "$ROOT"
 
 check 'bash -n rootback.sh lib/*.sh tests/*.sh tests/kernel/*.sh tests/poc_compat/*.sh' 'shell syntax'
-check 'awk -F"|" '"'"'/^[^#]/ && NF!=18 {exit 1}'"'"' catalog/cves.tsv' 'catalog has 18 fields per row'
-check '[ "$(grep -vc "^#" catalog/cves.tsv)" -eq 27 ]' 'catalog has 27 entries'
-check '[ "$(grep -vc "^#" tests/cases.tsv)" -eq 27 ]' 'case matrix covers 27 CVEs'
+check 'awk -F"|" '"'"'/^[^#]/ && NF!=19 {exit 1}'"'"' catalog/cves.tsv' 'catalog has 19 fields per row'
+check '[ "$(grep -vc "^#" catalog/cves.tsv)" -eq 39 ]' 'catalog has 39 entries'
+check '[ "$(grep -vc "^#" tests/cases.tsv)" -eq 39 ]' 'case matrix covers 39 CVEs'
 check 'awk -F"|" '"'"'/^[^#]/ && NF!=13 {exit 1}'"'"' tests/cases.tsv' 'case matrix has 13 fields per row'
 
 source lib/common.sh
@@ -30,7 +30,12 @@ check '[ "$(rb_ver_key 1.2.3)" = "00001.00002.00003.1.00000" ]' 'version: fixed-
 
 check 'ROOTBACK_KERNEL=6.12.80 ./rootback.sh scan --json | jq -e '"'"'any(.[]; .id=="CVE-2026-31431" and .state=="VULNERABLE")'"'"' >/dev/null' 'scan: fake vulnerable kernel'
 check 'ROOTBACK_KERNEL=7.3.3 ./rootback.sh scan --json | jq -e '"'"'[.[] | select((.class=="kernel" or .class=="kvm") and .state=="VULNERABLE")] | length == 0'"'"' >/dev/null' 'scan: patched kernel has no kernel CVE'
-check 'ROOTBACK_KERNEL=6.12.80 ./rootback.sh scan --json | jq -e '"'"'length == 27'"'"' >/dev/null' 'scan: JSON has 27 records'
+check 'ROOTBACK_KERNEL=6.12.80 ./rootback.sh scan --json | jq -e '"'"'.[]|select(.id=="CVE-2026-59044")|.state=="NOT_AFFECTED"'"'"' >/dev/null' 'scan: android entries inactive on desktops'
+check 'ROOTBACK_KERNEL=6.12.80 ./rootback.sh scan --json | jq -e '"'"'length == 39'"'"' >/dev/null' 'scan: JSON has 39 records'
+check 'ROOTBACK_OS_ID=android ROOTBACK_ANDROID_SPL=2026-10-01 ROOTBACK_KERNEL=6.1.75-android14-11-g3f1c2e5b8f9d ./rootback.sh scan --json | jq -e '"'"'.[]|select(.id=="CVE-2026-59044")|.state=="VULNERABLE" and .confidence=="high"'"'"' >/dev/null' 'scan: android SPL below fix is vulnerable'
+check 'ROOTBACK_OS_ID=android ROOTBACK_ANDROID_SPL=2026-11-05 ROOTBACK_KERNEL=6.1.75-android14-11-g3f1c2e5b8f9d ./rootback.sh scan --json | jq -e '"'"'.[]|select(.id=="CVE-2026-59044")|.state=="PATCHED"'"'"' >/dev/null' 'scan: android SPL at fix is patched'
+check 'ROOTBACK_OS_ID=android ROOTBACK_ANDROID_SPL=2026-10-01 ROOTBACK_KERNEL=6.1.75-android14-11-g3f1c2e5b8f9d ./rootback.sh scan --json | jq -e '"'"'.[]|select(.id=="CVE-2026-43284")|.state=="VULNERABLE" and .reachable=="no"'"'"' >/dev/null' 'scan: android SPL overrides upstream matrix'
+check 'ROOTBACK_OS_ID=android ROOTBACK_ANDROID_SPL=2026-10-01 ROOTBACK_KERNEL=6.1.75-android14-11-g3f1c2e5b8f9d ./rootback.sh scan --json | jq -e '"'"'.[]|select(.id=="CVE-2026-31431")|.confidence=="medium" and (.detail|test("GKI"))'"'"' >/dev/null' 'scan: GKI base version is not high confidence'
 
 out=$(ROOTBACK_KERNEL=6.12.80 ROOTBACK_MODULES=algif_aead ./rootback.sh exploit auto --dry-run --authorized 2>&1)
 check 'grep -q "auto-selected CVE-" <<<"$out"' 'auto: selects a candidate'
@@ -45,6 +50,17 @@ check '[ $? -eq 2 ]' 'gate: refuses without --authorized'
 ./rootback.sh --host 127.0.0.1 >/dev/null 2>&1
 check '[ $? -eq 1 ]' 'gate: no remote target option'
 
+ROOTBACK_OS_ID=android bash -c 'source lib/common.sh; source lib/reset.sh; rb_prepare_payload' >"$TMP/android-reset.out" 2>&1
+rc=$?
+check '[ "$rc" -eq 1 ]' 'reset: Android refusal exit'
+check 'grep -q "Android" "$TMP/android-reset.out"' 'reset: Android refusal reason'
+
+ROOTBACK_KERNEL=6.1.75-android14-11-g3f1c2e5b8f9d ROOTBACK_OS_ID=android \
+  ./rootback.sh exploit CVE-2026-31431 --authorized --dry-run >"$TMP/android-exp.out" 2>&1
+rc=$?
+check '[ "$rc" -eq 1 ]' 'exploit: Android recipe refusal exit'
+check 'grep -q "Android" "$TMP/android-exp.out"' 'exploit: Android recipe refusal reason'
+
 RB_WORK="$TMP/payload"
 mkdir -p "$RB_WORK"
 RB_USER=root
@@ -57,9 +73,9 @@ check 'grep -q "not root" <(sh "$RB_PAYLOAD" 2>&1)' 'payload: non-root guard mes
 rm -rf "$RB_WORK"
 RB_WORK='' RB_PAYLOAD=''
 
-check '[ "$(grep -c "<tr><td><code>CVE-" index.html)" -eq 27 ]' 'site: 27 catalog rows'
+check '[ "$(grep -c "<tr><td><code>CVE-" index.html)" -eq 39 ]' 'site: 39 catalog rows'
 check '! grep -qi "<script" index.html' 'site: no JavaScript'
-check '[ "$(grep -c "^| CVE-" README.md)" -ge 27 ]' 'README: catalog tables present'
+check '[ "$(grep -c "^| CVE-" README.md)" -ge 39 ]' 'README: catalog tables present'
 check 'grep -q "I OWN THIS MACHINE" README.md index.html' 'docs: consent phrase documented'
 
 printf '\n'

@@ -29,3 +29,15 @@ CVE-2022-0847|none|5.16.10|7.3.3|||x86_64||no|3|no|no|no
 CVE-2023-4911|glibc|7.3.3|7.3.3|2.35|2.39|x86_64||no|3|no|no|no
 CVE-2023-0386|none|6.2.1|7.3.3|||x86_64|overlay|yes|3|no|no|no
 CVE-2023-32233|none|6.3.1|7.3.3|||x86_64|nf_tables|yes|3|no|no|no
+CVE-2026-99999|none|6.12.112|7.3.3|||x86_64||no|3|no|no|no
+CVE-2026-53256|android|6.1.75-android14-11-g3f1c2e5b8f9d|6.1.75-android14-11-g3f1c2e5b8f9d|2026-10-01|2026-11-05|aarch64||no|3|no|no|no
+CVE-2026-59044|android|6.1.75-android14-11-g3f1c2e5b8f9d|6.1.75-android14-11-g3f1c2e5b8f9d|2026-10-01|2026-11-05|aarch64||no|3|no|no|no
+CVE-2026-59045|android|6.1.75-android14-11-g3f1c2e5b8f9d|6.1.75-android14-11-g3f1c2e5b8f9d|2026-10-01|2026-11-05|aarch64||no|3|no|no|no
+CVE-2026-80604|android|6.1.75-android14-11-g3f1c2e5b8f9d|6.1.75-android14-11-g3f1c2e5b8f9d|2026-10-01|2026-11-05|aarch64||no|3|no|no|no
+CVE-2026-89774|android|6.1.75-android14-11-g3f1c2e5b8f9d|6.1.75-android14-11-g3f1c2e5b8f9d|2026-10-01|2026-11-05|aarch64||no|3|no|no|no
+CVE-2025-38627|android|6.1.75-android14-11-g3f1c2e5b8f9d|6.1.75-android14-11-g3f1c2e5b8f9d|2026-10-01|2026-11-05|aarch64||no|3|no|no|no
+CVE-2026-58825|android|6.1.75-android14-11-g3f1c2e5b8f9d|6.1.75-android14-11-g3f1c2e5b8f9d|2026-10-01|2026-11-05|aarch64||no|3|no|no|no
+CVE-2026-58826|android|6.1.75-android14-11-g3f1c2e5b8f9d|6.1.75-android14-11-g3f1c2e5b8f9d|2026-10-01|2026-11-05|aarch64||no|3|no|no|no
+CVE-2026-58827|android|6.1.75-android14-11-g3f1c2e5b8f9d|6.1.75-android14-11-g3f1c2e5b8f9d|2026-10-01|2026-11-05|aarch64||no|3|no|no|no
+CVE-2026-58828|android|6.1.75-android14-11-g3f1c2e5b8f9d|6.1.75-android14-11-g3f1c2e5b8f9d|2026-10-01|2026-11-05|aarch64||no|3|no|no|no
+CVE-2026-59043|android|6.1.75-android14-11-g3f1c2e5b8f9d|6.1.75-android14-11-g3f1c2e5b8f9d|2026-10-01|2026-11-05|aarch64||no|3|no|no|no

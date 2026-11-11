@@ -28,7 +28,12 @@ rb_kernel_max_fix() {
 }
 
 rb_check_kernel_generic() {
-  local vendor=0
+  local vendor=0 android=0
+  rb_is_android && android=1
+  if (( android )) && [[ -n ${RB_CUR_ASPL:-} ]]; then
+    rb_check_android
+    return 0
+  fi
   RB_STATE=$(rb_kernel_status "$RB_CUR_KFROM" "$RB_CUR_KFIX")
   RB_REACH='unknown'
   RB_CONF='medium'
@@ -83,13 +88,23 @@ rb_check_kernel_generic() {
   fi
 
   if [[ $RB_CUR_USERNS == 1 ]]; then
-    local us
-    us=$(rb_userns_state)
-    case $us in
-      no)         RB_REACH='no'; RB_DETAIL+="; unprivileged user namespaces disabled" ;;
-      restricted) RB_CONF='medium'; RB_DETAIL+="; unprivileged userns restricted (AppArmor)" ;;
-      unknown)    RB_CONF='medium'; RB_DETAIL+="; userns state unknown" ;;
-    esac
+    if (( android )); then
+      RB_REACH='no'
+      RB_DETAIL+="; Android app sandbox: unprivileged user namespaces unavailable"
+    else
+      local us
+      us=$(rb_userns_state)
+      case $us in
+        no)         RB_REACH='no'; RB_DETAIL+="; unprivileged user namespaces disabled" ;;
+        restricted) RB_CONF='medium'; RB_DETAIL+="; unprivileged userns restricted (AppArmor)" ;;
+        unknown)    RB_CONF='medium'; RB_DETAIL+="; userns state unknown" ;;
+      esac
+    fi
+  fi
+
+  if (( android )) && [[ $RB_STATE == VULNERABLE ]]; then
+    RB_CONF='medium'
+    RB_DETAIL+="; GKI base version is not a patch level: check ro.build.version.security_patch"
   fi
 }
 
@@ -122,6 +137,49 @@ rb_check_kvm() {
     yes|1|Y|y)    RB_DETAIL+="; /dev/kvm + nested virtualization" ;;
     *)            RB_CONF='medium'; RB_DETAIL+="; nested virtualization state unknown" ;;
   esac
+}
+
+rb_check_android() {
+  RB_REACH='unknown'
+  RB_CONF='medium'
+  if ! rb_is_android; then
+    RB_STATE='NOT_AFFECTED'
+    RB_REACH='no'
+    RB_CONF='high'
+    RB_DETAIL='not an Android device'
+    return 0
+  fi
+  local spl
+  spl=$(rb_android_spl)
+  if [[ -z $spl ]]; then
+    RB_STATE='UNKNOWN'
+    RB_DETAIL='Android device, but ro.build.version.security_patch is unavailable'
+    return 0
+  fi
+  if ! rb_spl_valid "$spl"; then
+    RB_STATE='UNKNOWN'
+    RB_DETAIL="unparseable Android security patch level: $spl"
+    return 0
+  fi
+  RB_DETAIL="android SPL $spl; fixed at ${RB_CUR_ASPL:-unknown}"
+  if [[ -n ${RB_CUR_ASPL:-} && $spl < $RB_CUR_ASPL ]]; then
+    RB_STATE='VULNERABLE'
+    RB_CONF='high'
+    RB_DETAIL+="; ${RB_CUR_PRE:-device-specific path}"
+    if [[ ${RB_CUR_USERNS:-0} == 1 ]]; then
+      RB_REACH='no'
+      RB_DETAIL+='; Android app sandbox: unprivileged userns unavailable'
+    fi
+  else
+    RB_STATE='PATCHED'
+    RB_CONF='high'
+    RB_REACH='no'
+    RB_DETAIL+="; no reachable path"
+    return 0
+  fi
+  if [[ $(getenforce 2>/dev/null || true) == Enforcing ]]; then
+    RB_DETAIL+='; SELinux enforcing'
+  fi
 }
 
 rb_check_cifs() {
@@ -285,6 +343,7 @@ rb_run_one_check() {
   RB_STATE='UNKNOWN'; RB_REACH='unknown'; RB_CONF='low'; RB_DETAIL=''
   case $RB_CUR_KIND in
     kernel) rb_check_kernel_generic ;;
+    android) rb_check_android ;;
     kvm)    rb_check_kvm ;;
     cifs)   rb_check_cifs ;;
     ptrace) rb_check_ptrace ;;
@@ -306,6 +365,9 @@ rb_scan_collect() {
   rb_catalog_load
   for id in "${RB_IDS[@]}"; do
     rb_catalog_get "$id"
+    if [[ ${RB_SCAN_FILTER:-0} == 1 && -n ${RB_CLASS:-} && $RB_CUR_CLASS != "$RB_CLASS" ]]; then
+      continue
+    fi
     rb_run_one_check
     printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
       "$RB_ID" "$RB_STATE" "$RB_REACH" "$RB_CONF" "$RB_CUR_ORDER" "$RB_DETAIL" >>"$out"
@@ -334,7 +396,7 @@ rb_scan_render() {
   done <"$file"
   printf '\n'
   if (( vuln )); then
-    rb_warn "$vuln CVE(s) look applicable; this is a version heuristic, not a vendor patch attestation."
+    rb_warn "$vuln CVE(s) look applicable; this is a local heuristic (version or Android SPL), not a vendor patch attestation."
   else
     rb_ok "No applicable CVE detected by this snapshot."
   fi
@@ -363,6 +425,7 @@ rb_scan_json() {
 # Emits: order, rank, id, confidence, detail
 rb_auto_candidates() {
   local file=$1 id state reach conf order detail rank
+  rb_is_android && return 0
   while IFS=$'\t' read -r id state reach conf order detail; do
     [[ $state == VULNERABLE && $reach != no ]] || continue
     rb_catalog_get "$id"

@@ -68,6 +68,7 @@ Options:
   --class CLASS           filter list/scan output (kernel, kvm, container, ...)
   --fail-on-vuln          scan exits 1 if an applicable CVE is found
   --kernel-version VER    test detection against a different kernel string
+  --android-spl DATE      override the Android security patch level (YYYY-MM-DD)
   --markdown | --html     render the catalog in that format
   -h, --help              this text
   --version               version
@@ -124,6 +125,7 @@ trap rb_cleanup_payload EXIT
 
 rb_scan_cmd() {
   local tmp
+  RB_SCAN_FILTER=1
   tmp=$(mktemp "${TMPDIR:-/tmp}/rootback-scan.XXXXXX") || rb_die "mktemp failed"
   rb_scan_collect "$tmp"
   if [[ $RB_JSON == 1 ]]; then
@@ -222,6 +224,8 @@ rb_deps_cmd() {
   printf 'rootback %s\n' "$RB_VERSION"
   printf 'kernel      : %s\n' "$(rb_kernel_version)"
   printf 'os          : %s\n' "$(rb_os_id)"
+  printf 'android     : %s\n' "$(rb_is_android && printf yes || printf no)"
+  printf 'android spl : %s\n' "$(rb_android_spl)"
   printf 'arch        : %s\n' "$(rb_arch)"
   printf 'container   : %s\n' "$(rb_container_state)"
   printf 'vm          : %s\n' "$(rb_vm_state)"
@@ -271,6 +275,8 @@ while (($#)); do
     --poc-dir=*) RB_POC_DIR_OVERRIDE=${1#*=}; shift ;;
     --kernel-version) ROOTBACK_KERNEL=${2:-}; shift 2 ;;
     --kernel-version=*) ROOTBACK_KERNEL=${1#*=}; shift ;;
+    --android-spl) ROOTBACK_ANDROID_SPL=${2:-}; shift 2 ;;
+    --android-spl=*) ROOTBACK_ANDROID_SPL=${1#*=}; shift ;;
     --quiet) RB_QUIET=1; shift ;;
     --no-color) C_RESET=''; C_DIM=''; C_BOLD=''; C_RED=''; C_GREEN=''; C_YELLOW=''; C_BLUE=''; C_MAGENTA=''; C_CYAN=''; shift ;;
     -h|--help) CMD=help; shift ;;

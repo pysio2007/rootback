@@ -6,7 +6,7 @@ declare -A RB_C_NAME=() RB_C_CLASS=() RB_C_SEV=() RB_C_AFFECTED=()
 declare -A RB_C_FIXED=() RB_C_PRE=() RB_C_POC=() RB_C_MODE=()
 declare -A RB_C_ORDER=() RB_C_KIND=() RB_C_KFROM=() RB_C_KFIX=()
 declare -A RB_C_MODS=() RB_C_CONFIG=() RB_C_USERNS=() RB_C_RECIPE=()
-declare -A RB_C_NOTES=()
+declare -A RB_C_NOTES=() RB_C_ASPL=()
 
 rb_catalog_load() {
   [[ -r $RB_CATALOG ]] || rb_die "catalog not found: $RB_CATALOG"
@@ -15,9 +15,9 @@ rb_catalog_load() {
   RB_C_FIXED=(); RB_C_PRE=(); RB_C_POC=(); RB_C_MODE=()
   RB_C_ORDER=(); RB_C_KIND=(); RB_C_KFROM=(); RB_C_KFIX=()
   RB_C_MODS=(); RB_C_CONFIG=(); RB_C_USERNS=(); RB_C_RECIPE=()
-  RB_C_NOTES=()
-  local id name class sev affected fixed pre poc mode order kind kfrom kfix mods config userns recipe notes
-  while IFS='|' read -r id name class sev affected fixed pre poc mode order kind kfrom kfix mods config userns recipe notes; do
+  RB_C_NOTES=(); RB_C_ASPL=()
+  local id name class sev affected fixed pre poc mode order kind kfrom kfix mods config userns recipe notes aspl
+  while IFS='|' read -r id name class sev affected fixed pre poc mode order kind kfrom kfix mods config userns recipe notes aspl; do
     [[ -z $id || $id == \#* ]] && continue
     RB_IDS+=("$id")
     RB_C_NAME[$id]=$name
@@ -37,6 +37,7 @@ rb_catalog_load() {
     RB_C_USERNS[$id]=$userns
     RB_C_RECIPE[$id]=$recipe
     RB_C_NOTES[$id]=$notes
+    RB_C_ASPL[$id]=$aspl
   done <"$RB_CATALOG"
 }
 
@@ -61,6 +62,7 @@ rb_catalog_get() {
   RB_CUR_USERNS=${RB_C_USERNS[$id]}
   RB_CUR_RECIPE=${RB_C_RECIPE[$id]}
   RB_CUR_NOTES=${RB_C_NOTES[$id]}
+  RB_CUR_ASPL=${RB_C_ASPL[$id]}
 }
 
 rb_catalog_ids() { printf '%s\n' "${RB_IDS[@]}"; }
