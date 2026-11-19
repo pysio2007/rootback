@@ -207,6 +207,7 @@ rb_module_symbol() {
     act_pedit)  printf 'CONFIG_NET_ACT_PEDIT' ;;
     nf_tables)  printf 'CONFIG_NF_TABLES' ;;
     rds)        printf 'CONFIG_RDS' ;;
+    sctp)       printf 'CONFIG_IP_SCTP' ;;
     cifs)       printf 'CONFIG_CIFS' ;;
     overlay)    printf 'CONFIG_OVERLAY_FS' ;;
     kvm)        printf 'CONFIG_KVM' ;;
@@ -341,6 +342,52 @@ rb_cmd_version() {
   out=$("$cmd" --version 2>/dev/null | head -1 || true)
   # Locale-independent: take the first X.Y.Z token on the first line.
   printf '%s\n' "$out" | grep -oE '[0-9]+(\.[0-9]+){0,2}[0-9A-Za-z.+-]*' | head -1 || true
+}
+
+rb_nginx_version() {
+  local bin=$1 out
+  [[ -n $bin ]] || { printf ''; return 0; }
+  out=$("$bin" -v 2>&1 | head -1 || true)
+  printf '%s\n' "$out" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
+}
+
+# Java build versions use a fourth numeric component (21.0.13.1) that the
+# generic key intentionally ignores.
+rb_java_ver_ge() {
+  local a b c d x y z w
+  [[ $1 =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(\.([0-9]+))? ]] || return 1
+  a=${BASH_REMATCH[1]}; b=${BASH_REMATCH[2]}; c=${BASH_REMATCH[3]}; d=${BASH_REMATCH[5]:-0}
+  [[ $2 =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(\.([0-9]+))? ]] || return 1
+  x=${BASH_REMATCH[1]}; y=${BASH_REMATCH[2]}; z=${BASH_REMATCH[3]}; w=${BASH_REMATCH[5]:-0}
+  (( a > x )) && return 0
+  (( a < x )) && return 1
+  (( b > y )) && return 0
+  (( b < y )) && return 1
+  (( c > z )) && return 0
+  (( c < z )) && return 1
+  (( d >= w ))
+}
+
+rb_java_version() {
+  local bin=$1 out
+  [[ -n $bin ]] || { printf ''; return 0; }
+  out=$("$bin" -version 2>&1 | head -1 || true)
+  printf '%s\n' "$out" | sed -n 's/.*"\([0-9][^"]*\)".*/\1/p' | head -1
+}
+
+rb_php_version() {
+  local bin=$1 out
+  [[ -n $bin ]] || { printf ''; return 0; }
+  out=$("$bin" -v 2>&1 | head -1 || true)
+  printf '%s\n' "$out" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
+}
+
+rb_node_version() {
+  local bin=$1 out
+  [[ -n $bin ]] || { printf ''; return 0; }
+  out=$("$bin" -v 2>&1 | head -1 || true)
+  out=${out#v}
+  printf '%s\n' "$out" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
 }
 
 rb_glibc_version() {

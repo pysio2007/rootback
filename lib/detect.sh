@@ -117,7 +117,7 @@ rb_check_kvm() {
   case $RB_ID in
     CVE-2026-89775|CVE-2026-46316)
       [[ $arch == aarch64 || $arch == arm64 ]] || { RB_REACH='no'; RB_DETAIL+="; arm64-only"; return 0; } ;;
-    CVE-2026-53359|CVE-2026-64561|CVE-2025-40026)
+    CVE-2026-53359|CVE-2026-64561|CVE-2025-40026|CVE-2026-99312)
       [[ $arch == x86_64 || $arch == amd64 ]] || { RB_REACH='no'; RB_DETAIL+="; x86_64-only"; return 0; } ;;
   esac
 
@@ -137,6 +137,20 @@ rb_check_kvm() {
     yes|1|Y|y)    RB_DETAIL+="; /dev/kvm + nested virtualization" ;;
     *)            RB_CONF='medium'; RB_DETAIL+="; nested virtualization state unknown" ;;
   esac
+
+  if [[ $RB_ID == CVE-2026-99312 ]]; then
+    local vendor=${ROOTBACK_KVM_VENDOR:-}
+    if [[ -z $vendor ]]; then
+      if [[ -d /sys/module/kvm_amd ]]; then vendor=amd
+      elif [[ -d /sys/module/kvm_intel ]]; then vendor=intel
+      else vendor=unknown; fi
+    fi
+    case $vendor in
+      amd) ;;
+      intel) RB_REACH='no'; RB_DETAIL+="; kvm_amd not present" ;;
+      *)     RB_CONF='medium'; RB_DETAIL+="; KVM vendor unknown (AMD-only bug)" ;;
+    esac
+  fi
 }
 
 rb_check_android() {
@@ -251,6 +265,187 @@ rb_check_pkexec() {
   fi
 }
 
+rb_check_nginx() {
+  RB_REACH='unknown'; RB_CONF='medium'
+  local ver bin vout
+  bin=$(rb_find_bin nginx 2>/dev/null || true)
+  ver=${ROOTBACK_NGINX_VERSION:-}
+  if [[ -z $ver ]]; then
+    if [[ -z $bin ]]; then
+      RB_STATE='NOT_AFFECTED'; RB_REACH='no'; RB_DETAIL='nginx not installed'; return 0
+    fi
+    ver=$(rb_nginx_version "$bin")
+  fi
+  if [[ -z $ver ]]; then
+    RB_STATE='UNKNOWN'; RB_DETAIL='cannot parse nginx version'; return 0
+  fi
+  RB_DETAIL="nginx $ver; version check only, config not evaluated"
+
+  local first
+  case $RB_ID in
+    CVE-2026-123007) first='1.9.5' ;;
+    CVE-2026-123634) first='1.13.4' ;;
+    CVE-2026-123633) first='1.19.7' ;;
+    CVE-2026-121810) first='1.25.0' ;;
+    CVE-2026-113425) first='0.5.15' ;;
+    *)               first='' ;;
+  esac
+  if [[ -n $first ]] && rb_ver_lt "$ver" "$first"; then
+    RB_STATE='NOT_AFFECTED'; RB_CONF='high'; return 0
+  fi
+
+  if rb_ver_lt "$ver" '1.30.7' ||
+     { rb_ver_ge "$ver" '1.31.0' && rb_ver_lt "$ver" '1.31.9'; }; then
+    RB_STATE='VULNERABLE'; RB_CONF='high'
+  else
+    RB_STATE='PATCHED'; RB_CONF='high'; return 0
+  fi
+
+  if [[ $RB_ID == CVE-2026-123007 || $RB_ID == CVE-2026-123633 ]] && [[ -n $bin ]] && [[ -z ${ROOTBACK_NGINX_VERSION:-} ]]; then
+    vout=$("$bin" -V 2>&1 || true)
+    if [[ -n $vout ]]; then
+      if [[ $vout == *--with-http_v2_module* ]]; then
+        RB_DETAIL+='; HTTP/2 module present'
+      else
+        RB_REACH='no'; RB_DETAIL+='; HTTP/2 module absent'
+      fi
+    else
+      RB_CONF='medium'; RB_DETAIL+='; cannot read nginx build flags'
+    fi
+  fi
+}
+
+rb_check_java() {
+  RB_REACH='unknown'; RB_CONF='high'
+  local ver bin major base patched arch flags f
+  bin=$(rb_find_bin java 2>/dev/null || true)
+  ver=${ROOTBACK_JAVA_VERSION:-}
+  if [[ -z $ver ]]; then
+    if [[ -z $bin ]]; then
+      RB_STATE='NOT_AFFECTED'; RB_REACH='no'; RB_DETAIL='java not installed'; return 0
+    fi
+    ver=$(rb_java_version "$bin")
+  fi
+  if [[ -z $ver ]]; then
+    RB_STATE='UNKNOWN'; RB_DETAIL='cannot parse java version'; return 0
+  fi
+  RB_DETAIL="java $ver"
+  major=${ver%%.*}
+  case $major in
+    17|21|25|27) ;;
+    *) RB_STATE='NOT_AFFECTED'; RB_REACH='no'; RB_DETAIL+='; release line not listed as affected'; return 0 ;;
+  esac
+  if [[ $major == 17 ]] && rb_ver_lt "$ver" '17.0.6'; then
+    RB_STATE='NOT_AFFECTED'; RB_REACH='no'; return 0
+  fi
+  case $major in
+    17) base='17.0.21'; patched='17.0.21.1' ;;
+    21) base='21.0.13'; patched='21.0.13.1' ;;
+    25) base='25.0.5';  patched='25.0.5.1' ;;
+    27) base='27.0.1';  patched='27.0.1.1' ;;
+  esac
+  if rb_java_ver_ge "$ver" "$patched"; then
+    RB_STATE='PATCHED'; return 0
+  fi
+  if [[ $ver == "$base" || $ver == "$base"+* ]]; then
+    RB_STATE='UNKNOWN'; RB_CONF='medium'
+    RB_DETAIL+="; vendor build may or may not include the .1 fix"
+    return 0
+  fi
+  RB_STATE='VULNERABLE'
+
+  arch=$(rb_arch)
+  if [[ $arch != x86_64 && $arch != amd64 ]]; then
+    RB_REACH='no'; RB_DETAIL+="; $arch is not affected (AVX-512 VBMI required)"; return 0
+  fi
+  if [[ -n ${ROOTBACK_JAVA_CPU_OK:-} ]]; then
+    [[ $ROOTBACK_JAVA_CPU_OK == yes ]] || { RB_REACH='no'; RB_DETAIL+='; CPU lacks AVX-512 VBMI'; }
+    return 0
+  fi
+  flags=$(grep -m1 '^flags' /proc/cpuinfo 2>/dev/null || true)
+  if [[ -z $flags ]]; then
+    RB_CONF='medium'; RB_DETAIL+='; CPU flags unavailable'; return 0
+  fi
+  for f in avx512f avx512bw avx512vbmi bmi2; do
+    if [[ $flags != *" $f "* ]]; then
+      RB_REACH='no'; RB_DETAIL+="; CPU lacks $f"; return 0
+    fi
+  done
+  RB_DETAIL+='; CPU supports AVX-512 VBMI'
+}
+
+rb_check_php() {
+  RB_REACH='unknown'; RB_CONF='high'
+  local ver bin major minor fixed=''
+  bin=$(rb_find_bin php 2>/dev/null || true)
+  ver=${ROOTBACK_PHP_VERSION:-}
+  if [[ -z $ver ]]; then
+    if [[ -z $bin ]]; then
+      RB_STATE='NOT_AFFECTED'; RB_REACH='no'; RB_DETAIL='php not installed'; return 0
+    fi
+    ver=$(rb_php_version "$bin")
+  fi
+  if [[ -z $ver ]]; then
+    RB_STATE='UNKNOWN'; RB_DETAIL='cannot parse php version'; return 0
+  fi
+  RB_DETAIL="php $ver"
+  if rb_ver_lt "$ver" '5.4'; then
+    RB_STATE='NOT_AFFECTED'; RB_REACH='no'; return 0
+  fi
+  IFS=. read -r major minor _ <<<"$ver"
+  case "$major.$minor" in
+    8.2) fixed='8.2.35' ;;
+    8.3) fixed='8.3.36' ;;
+    8.4) fixed='8.4.27' ;;
+    8.5) fixed='8.5.12' ;;
+  esac
+  if [[ -n $fixed ]]; then
+    if rb_ver_ge "$ver" "$fixed"; then
+      RB_STATE='PATCHED'; return 0
+    fi
+    RB_STATE='VULNERABLE'
+  elif (( major > 8 || (major == 8 && minor >= 6) )); then
+    RB_STATE='UNKNOWN'; RB_CONF='medium'
+    RB_DETAIL+='; release line not in the vendor matrix'
+  else
+    RB_STATE='VULNERABLE'
+    RB_DETAIL+='; EOL branch has no official patch'
+  fi
+}
+
+rb_check_node() {
+  RB_REACH='unknown'; RB_CONF='high'
+  local ver bin major minor fixed=''
+  bin=$(rb_find_bin node 2>/dev/null || true)
+  ver=${ROOTBACK_NODE_VERSION:-}
+  if [[ -z $ver ]]; then
+    if [[ -z $bin ]]; then
+      RB_STATE='NOT_AFFECTED'; RB_REACH='no'; RB_DETAIL='node not installed'; return 0
+    fi
+    ver=$(rb_node_version "$bin")
+  fi
+  if [[ -z $ver ]]; then
+    RB_STATE='UNKNOWN'; RB_DETAIL='cannot parse node version'; return 0
+  fi
+  RB_DETAIL="node $ver"
+  IFS=. read -r major minor _ <<<"$ver"
+  case $major in
+    22) fixed='22.23.4' ;;
+    24) fixed='24.22.1' ;;
+    26) fixed='26.12.1' ;;
+  esac
+  if [[ -z $fixed ]]; then
+    RB_STATE='UNKNOWN'; RB_CONF='medium'
+    RB_DETAIL+='; release line not in the vendor matrix'
+    return 0
+  fi
+  if rb_ver_ge "$ver" "$fixed"; then
+    RB_STATE='PATCHED'; return 0
+  fi
+  RB_STATE='VULNERABLE'
+  RB_DETAIL+='; bundled Brotli decoder; app must decode untrusted data'
+}
+
 rb_check_glibc() {
   RB_REACH='no'; RB_CONF='medium'
   local ver
@@ -349,6 +544,10 @@ rb_run_one_check() {
     ptrace) rb_check_ptrace ;;
     sudo)   rb_check_sudo ;;
     pkexec) rb_check_pkexec ;;
+    nginx)  rb_check_nginx ;;
+    java)   rb_check_java ;;
+    php)    rb_check_php ;;
+    node)   rb_check_node ;;
     glibc)  rb_check_glibc ;;
     runc)   rb_check_runc ;;
     podman) rb_check_podman ;;

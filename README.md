@@ -28,7 +28,7 @@ It does not phone home, persist, harvest credentials, or accept a remote target.
 
 ## What it detects
 
-Catalog snapshot: **2026-11-11**. 39 entries: 8 kernel LPEs, 6 KVM escapes, 11 Android kernel entries, 7 container-runtime escapes, 1 userspace entry, and 6 legacy entries (2 of which have auto recipes).
+Catalog snapshot: **2026-11-20**. 60 entries: 11 kernel LPEs, 7 KVM escapes, 19 Android kernel entries, 7 container-runtime escapes, 10 userspace entries, and 6 legacy entries (2 of which have auto recipes).
 
 The tables below are generated from [`catalog/cves.tsv`](catalog/cves.tsv), the single source of truth.
 
@@ -46,6 +46,9 @@ The tables below are generated from [`catalog/cves.tsv`](catalog/cves.tsv), the 
 | CVE-2026-43494 | PinTheft | kernel | Linux 4.17 - 6.18.32, 7.0.0 - 7.0.9 (CONFIG_RDS) | 6.18.33, 7.0.10, 6.12.91, 6.6.141 | auto |
 | CVE-2026-46333 | ptrace fd theft | kernel | Linux 4.10 - 6.18.30, 7.0.0 - 7.0.7 | 6.18.31, 7.0.8, 7.1+ | manual |
 | CVE-2026-46243 | CIFSwitch | kernel | Linux 2.6.24 - 6.18.33, 7.0.0 - 7.0.10 | 6.18.34, 7.0.11, 7.1+ | manual |
+| CVE-2026-64564 | SCTPhantom | kernel | Linux 2.6.25 - 6.18.41, 7.0.0 - 7.1.5 | 5.10.265, 5.15.216, 6.1.183, 6.6.148, 6.12.101, 6.18.42, 7.1.6, 7.2+ | manual |
+| CVE-2026-98432 | TCP IP-options UAF | kernel | Linux 4.4 - 6.18.55, 7.0.0 - 7.2.9 | 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.56, 7.2.10, 7.3+ | manual |
+| CVE-2026-99284 | skb_zerocopy frag | kernel | Linux 3.14 - 6.18.60, 7.0.0 - 7.2.14, 7.3.0 - 7.3.1 | 6.12.117, 6.18.61, 7.2.15, 7.3.2, 7.4-rc1+ | manual |
 
 ### KVM guest-to-host
 
@@ -57,6 +60,7 @@ The tables below are generated from [`catalog/cves.tsv`](catalog/cves.tsv), the 
 | CVE-2025-40026 | KVM x86 I/O intercept | kvm | Linux 3.0 - 6.17.1 (KVM/x86) | 6.17.2, 6.18+ | manual |
 | CVE-2026-46316 | ITScape | kvm | Linux 6.10 - 6.12.92, 6.18.0 - 6.18.34, 7.0.0 - 7.0.11 (KVM/arm64) | 6.12.93, 6.18.35, 7.0.12, 7.1+ | manual |
 | CVE-2026-99999 | IPv4 checksum_start | kvm | Linux 2.6.27 - 5.10.271, 5.15.222, 6.1.189, 6.6.158, 6.12.112, 6.18.56, 7.2.10 | 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.57, 7.2.11, 7.3+ | manual |
+| CVE-2026-99312 | KVM AMD nested INIT | kvm | Linux 5.15.81 - 6.18.63, 7.0.0 - 7.3.4 (KVM/AMD, nested) | 6.12.118, 6.18.64, 7.3.5, 7.4-rc2+ | manual |
 
 ### Android kernel
 
@@ -75,6 +79,14 @@ Android is matched against the device security patch level (`ro.build.version.se
 | CVE-2026-58827 | DMA-BUF EoP (3) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
 | CVE-2026-58828 | DMA-BUF EoP (4) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
 | CVE-2026-59043 | pKVM host EoP (3) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-23240 | Android TLS EoP | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-31533 | Android TLS EoP (2) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-43499 | Android locking EoP | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-46242 | Android Fs EoP | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-58824 | pKVM host EoP (4) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-64011 | Android NFC EoP | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-64427 | Android HID EoP (2) | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
+| CVE-2026-64560 | Android kernel EoP | android | Android SPL < 2026-11-05 | 2026-11-05 SPL | manual |
 
 Entries that only have an upstream fix matrix are still reported on Android, but capped at `medium` confidence and annotated: the GKI patch set is not the stable patch number. Entries that require unprivileged user namespaces are marked unreachable, because the Android app sandbox does not grant them.
 
@@ -94,9 +106,22 @@ These require control over container creation, a malicious image, or shared moun
 
 ### Userspace
 
+The `nginx`, `java`, `php` and `node` rows are local version checks for branded remote-RCE families (`nginx2root`, `Java4Shell`, `PHP2Shell`, `Node2Shell`/`HTTP2Shell`). They tell you whether the installed runtime predates the fixed release; they do not inspect the running application and do not attempt remote exploitation.
+
+React2Shell, Plex2Shell and the 2021–2022 4Shell bugs (Log4Shell, Spring4Shell, Text4Shell) live in application dependencies or JARs. rootback does not scan web roots or classpaths, so it does not ship a detector for those; use the language package manager or SBOM for that layer.
+
 | CVE | Name | Class | Affected (upstream) | Fixed (upstream) | Mode |
 |---|---|---|---|---|---|
 | CVE-2025-32463 | sudo chroot | userspace | sudo 1.9.14 - 1.9.17 | 1.9.17p1+ | auto |
+| CVE-2026-123007 | nginx HTTP/2 send_window | userspace | nginx 1.9.5 - 1.30.6, 1.31.0 - 1.31.8 | 1.30.7, 1.31.9+ | manual |
+| CVE-2026-123634 | nginx resolver UAF | userspace | nginx 1.13.4 - 1.30.6, 1.31.0 - 1.31.8 | 1.30.7, 1.31.9+ | manual |
+| CVE-2026-123633 | nginx HTTP/2 UAF | userspace | nginx 1.19.7 - 1.30.6, 1.31.0 - 1.31.8 | 1.30.7, 1.31.9+ | manual |
+| CVE-2026-121810 | nginx HTTP/3 UAF | userspace | nginx 1.25.0 - 1.30.6, 1.31.0 - 1.31.8 | 1.30.7, 1.31.9+ | manual |
+| CVE-2026-113425 | nginx mail proxy UAF | userspace | nginx 0.5.15 - 1.30.6, 1.31.0 - 1.31.8 | 1.30.7, 1.31.9+ | manual |
+| CVE-2026-114938 | Java4Shell | userspace | OpenJDK 17.0.6 - 17.0.21, 21.0.0 - 21.0.13, 25.0.0 - 25.0.5, 27.0.0 - 27.0.1 (x86-64 AVX-512 VBMI) | 17.0.21.1, 21.0.13.1, 25.0.5.1, 27.0.1.1 | manual |
+| CVE-2026-109618 | PHP2Shell OOM | userspace | PHP 5.4+ (8.2 < 8.2.35, 8.3 < 8.3.36, 8.4 < 8.4.27, 8.5 < 8.5.12; EOL branches unfixed) | 8.2.35, 8.3.36, 8.4.27, 8.5.12 | manual |
+| CVE-2026-109619 | PHP2Shell UAF | userspace | PHP 5.4+ (same branches) | 8.2.35, 8.3.36, 8.4.27, 8.5.12 | manual |
+| CVE-2026-111497 | Node2Shell / HTTP2Shell | userspace | Node.js 22.0.0 - 22.23.3, 24.0.0 - 24.22.0, 26.0.0 - 26.12.0 | 22.23.4, 24.22.1, 26.12.1 | manual |
 
 ### Legacy kernel LPEs
 
@@ -133,7 +158,7 @@ Detection is a triage, not an attestation. The version matrices are upstream sta
 
 On Android there is a real local oracle: the security patch level. When it is readable, entries with an Android fixed level are decided by SPL, not by `uname -r`. When it is missing, the result drops to `UNKNOWN` or `medium` instead of pretending the GKI base version is authoritative. Override it for a scan with `--android-spl 2026-10-01`.
 
-Feature gates matter: `algif_aead`, `esp4`/`esp6`, `act_pedit`, `rds`, `cifs.upcall`, unprivileged user namespaces, `ptrace_scope`, `/dev/kvm`, and nested virtualization. If the feature is absent, the exploit path is not reachable even when the kernel version is in range.
+Feature gates matter: `algif_aead`, `esp4`/`esp6`, `act_pedit`, `rds`, `sctp`, `cifs.upcall`, unprivileged user namespaces, `ptrace_scope`, `/dev/kvm`, and nested virtualization. If the feature is absent, the exploit path is not reachable even when the kernel version is in range.
 
 ## Quick start
 
@@ -215,7 +240,10 @@ These are detection-only by design:
 
 - A KVM guest-to-host escape requires a malicious guest. The public Januscape PoC panics the host; the full escape is withheld. Zapscape and the arm64 VNCR bug need nested virtualization. ITScape has a public full-chain PoC for arm64, but it needs an arm64 KVM host, nested virtualization, and guest root.
 - CVE-2026-99999 is the virtio-net checksum metadata bug: a guest frame reaches `skb_checksum_help()` with a forged `checksum_start`, corrupting the IPv4 header on the host. It is listed as KEV; the public write-up covers host memory disclosure, crash, and administrator code execution. It also has a local netfilter trigger, so the detector does not require `/dev/kvm`.
+- CVE-2026-99312 is an AMD nested-virtualization bug: an INIT exit leaves a stale nested-page-table pointer, so a guest with root can read and write host memory after a reclaim race. It needs `kvm_amd`, nested virtualization, and guest root; the disclosure demonstrates the primitive but releases no PoC.
+- CVE-2026-64564 (SCTPhantom) is a local SCTP ASCONF use-after-free that also escapes a container to host root. A public full-chain PoC targets Debian 13, but the exploit is stateful and kernel-layout dependent, so it is detection-only here.
 - runc/Podman escapes require control over container creation, a malicious image, or shared mounts. If you are already inside a container without those, a version match is not enough.
+- The recent `*2root`/`*2shell` naming wave is mostly squatted domains ([ct2shell](https://raesene.github.io/ct2shell/) tracks the certificates). The real `nginx2root` set (CVE-2026-123007, CVE-2026-123634, CVE-2026-123633, CVE-2026-121810, CVE-2026-113425) is remote nginx RCE; its root half is SCTPhantom, which is catalogued. The five nginx CVEs are now version-checked locally against 1.30.7 / 1.31.9, but exploitation stays out of scope because there is no remote target.
 - Copy Fail is the exception: the same page-cache primitive can cross a shared base image in some Kubernetes setups. A public Kubernetes PoC is linked from the Copy Fail entry.
 
 ## Safety model
@@ -266,7 +294,7 @@ Three hosted workflows, all runnable on `ubuntu-latest`:
 | `cve-matrix.yml` | one detection job per CVE (vulnerable + patched fixtures), one build-only job per `auto` recipe | no |
 | `qemu-vulnerable.yml` | builds a known-vulnerable kernel and boots it under QEMU TCG | no |
 
-The 39 detection jobs read `tests/cases.tsv` and drive `rootback.sh` through fixture overrides (`ROOTBACK_KERNEL`, `ROOTBACK_OS_ID`, `ROOTBACK_ANDROID_SPL`, `ROOTBACK_CONFIG`, `ROOTBACK_MODULES`, `ROOTBACK_USERNS`, `ROOTBACK_KVM`, `ROOTBACK_NESTED`, tool-version binaries in `PATH`). Each job asserts both a vulnerable fixture and a patched fixture, so a detector cannot pass by always saying "vulnerable".
+The 60 detection jobs read `tests/cases.tsv` and drive `rootback.sh` through fixture overrides (`ROOTBACK_KERNEL`, `ROOTBACK_OS_ID`, `ROOTBACK_ANDROID_SPL`, `ROOTBACK_CONFIG`, `ROOTBACK_MODULES`, `ROOTBACK_USERNS`, `ROOTBACK_KVM`, `ROOTBACK_KVM_VENDOR`, `ROOTBACK_NGINX_VERSION`, `ROOTBACK_JAVA_VERSION`, `ROOTBACK_PHP_VERSION`, `ROOTBACK_NODE_VERSION`, `ROOTBACK_NESTED`, tool-version binaries in `PATH`). Each job asserts both a vulnerable fixture and a patched fixture, so a detector cannot pass by always saying "vulnerable".
 
 The 7 build jobs run `tests/cve_matrix.sh --cve CVE-... --build-only`. They fetch and compile the upstream PoC but never execute it.
 
@@ -287,7 +315,7 @@ lib/catalog.sh           TSV loader + Markdown/HTML renderers
 lib/detect.sh            per-class detection
 lib/exploit.sh           fetch / build / run / verify
 lib/reset.sh             payload construction + chpasswd
-catalog/cves.tsv         single source of truth (39 rows)
+catalog/cves.tsv         single source of truth (60 rows)
 index.html               pure-HTML text site for rootback.dev
 CNAME                    rootback.dev
 tests/smoke.sh           detection, version, and payload tests

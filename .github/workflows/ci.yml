@@ -29,7 +29,7 @@ jobs:
           catalog=$(awk -F'|' '!/^#/ && NF {print $1}' catalog/cves.tsv | sort)
           cases=$(awk -F'|' '!/^#/ && NF {print $1}' tests/cases.tsv | sort)
           n=$(printf '%s\n' "$catalog" | wc -l)
-          test "$n" -eq 39
+          test "$n" -eq 60
           test "$(printf '%s\n' "$cases" | wc -l)" -eq "$n"
           diff -u <(printf '%s\n' "$catalog") <(printf '%s\n' "$cases")
 

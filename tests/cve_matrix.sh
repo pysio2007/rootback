@@ -58,6 +58,10 @@ run_one() {
   podman_ver=5.8.4
   docker_ver=29.7.0
   glibc_ver=2.44
+  nginx_ver=1.31.9
+  java_ver=21.0.13.1
+  php_ver=8.5.12
+  node_ver=26.12.1
   case $tool in
     sudo)   sudo_ver=$active ;;
     pkexec) pkexec_ver=$active ;;
@@ -65,6 +69,10 @@ run_one() {
     podman) podman_ver=$active ;;
     docker) docker_ver=$active ;;
     glibc)  glibc_ver=$active ;;
+    nginx)  nginx_ver=$active ;;
+    java)   java_ver=$active ;;
+    php)    php_ver=$active ;;
+    node)   node_ver=$active ;;
   esac
 
   os_id=ubuntu
@@ -106,6 +114,12 @@ EOF
       ROOTBACK_USERNS="$userns" \
       ROOTBACK_PTRACE_SCOPE="$ptrace" \
       ROOTBACK_KVM="$kvm" \
+      ROOTBACK_KVM_VENDOR=amd \
+      ROOTBACK_NGINX_VERSION="$nginx_ver" \
+      ROOTBACK_JAVA_VERSION="$java_ver" \
+      ROOTBACK_JAVA_CPU_OK=yes \
+      ROOTBACK_PHP_VERSION="$php_ver" \
+      ROOTBACK_NODE_VERSION="$node_ver" \
       ROOTBACK_NESTED="$nested" \
       ROOTBACK_CONTAINER=no \
       ROOTBACK_VM=no \
